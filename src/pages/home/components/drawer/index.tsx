@@ -36,7 +36,6 @@ function HomeDrawer(props: any) {
 
     const { t, getSupportedLanguages, getLanguage, setLanguage } = useI18N();
 
-    // 普通用户不显示插件管理入口，插件引擎和本地插件仍正常运行。
     const basicSetting: ISettingOptions[] = [
         {
             icon: "cog-8-tooth",
@@ -44,8 +43,7 @@ function HomeDrawer(props: any) {
             onPress: () => {
                 navigateToSetting("basic");
             },
-        },
-        {
+        }, {
             icon: "t-shirt-outline",
             title: t("sidebar.themeSettings"),
             onPress: () => {
@@ -74,6 +72,7 @@ function HomeDrawer(props: any) {
         });
     }
 
+
     return (
         <>
             <PageBackground />
@@ -86,33 +85,49 @@ function HomeDrawer(props: any) {
                 </View>
                 <View style={style.card}>
                     <ListItem withHorizontalPadding heightType="smallest">
-                        <ListItem.ListItemText fontSize="subTitle" fontWeight="bold">
+                        <ListItem.ListItemText
+                            fontSize="subTitle"
+                            fontWeight="bold">
                             {t("common.setting")}
                         </ListItem.ListItemText>
                     </ListItem>
                     {basicSetting.map((item, index) => (
-                        <ListItem withHorizontalPadding key={"basic-setting-" + index} onPress={item.onPress}>
-                            <ListItem.ListItemIcon icon={item.icon} width={rpx(48)} />
+                        <ListItem
+                            withHorizontalPadding
+                            key={"basic-setting-" + index}
+                            onPress={item.onPress}>
+                            <ListItem.ListItemIcon
+                                icon={item.icon}
+                                width={rpx(48)}
+                            />
                             <ListItem.Content title={item.title} />
                         </ListItem>
                     ))}
                 </View>
                 <View style={style.card}>
                     <ListItem withHorizontalPadding heightType="smallest">
-                        <ListItem.ListItemText fontSize="subTitle" fontWeight="bold">
+                        <ListItem.ListItemText
+                            fontSize="subTitle"
+                            fontWeight="bold">
                             {t("common.other")}
                         </ListItem.ListItemText>
                     </ListItem>
                     <CountDownItem />
                     {otherSetting.map((item, index) => (
-                        <ListItem withHorizontalPadding key={"other-setting-" + index} onPress={item.onPress}>
-                            <ListItem.ListItemIcon icon={item.icon} width={rpx(48)} />
+                        <ListItem
+                            withHorizontalPadding
+                            key={"other-setting-" + index}
+                            onPress={item.onPress}>
+                            <ListItem.ListItemIcon
+                                icon={item.icon}
+                                width={rpx(48)}
+                            />
                             <ListItem.Content title={item.title} />
                         </ListItem>
                     ))}
-                    <ListItem withHorizontalPadding key="language" onPress={() => {
+                    <ListItem withHorizontalPadding key='language' onPress={() => {
                         showDialog("RadioDialog", {
-                            content: getSupportedLanguages().map(item => ({
+                            "content": getSupportedLanguages().map(item => ({
                                 title: item.name,
                                 value: item.locale,
                                 label: item.name,
@@ -124,41 +139,77 @@ function HomeDrawer(props: any) {
                             defaultSelected: getLanguage().locale,
                         });
                     }}>
-                        <ListItem.ListItemIcon icon="language" width={rpx(48)} />
+                        <ListItem.ListItemIcon icon='language' width={rpx(48)} />
                         <ListItem.Content title={t("sidebar.languageSettings")} />
-                        <ListItem.ListItemText fontSize="subTitle" position="right">{getLanguage().name}</ListItem.ListItemText>
+                        <ListItem.ListItemText fontSize='subTitle' position='right'>{getLanguage().name}</ListItem.ListItemText>
                     </ListItem>
                 </View>
 
                 <View style={style.card}>
                     <ListItem withHorizontalPadding heightType="smallest">
-                        <ListItem.ListItemText fontSize="subTitle" fontWeight="bold">
+                        <ListItem.ListItemText
+                            fontSize="subTitle"
+                            fontWeight="bold">
                             {t("common.software")}
                         </ListItem.ListItemText>
                     </ListItem>
-                    <ListItem withHorizontalPadding key="update" onPress={() => checkUpdateAndShowResult(true)}>
-                        <ListItem.ListItemIcon icon="arrow-path" width={rpx(48)} />
+
+                    <ListItem
+                        withHorizontalPadding
+                        key={"update"}
+                        onPress={() => {
+                            checkUpdateAndShowResult(true);
+                        }}>
+                        <ListItem.ListItemIcon
+                            icon={"arrow-path"}
+                            width={rpx(48)}
+                        />
                         <ListItem.Content title={t("sidebar.checkUpdate")} />
-                        <ListItem.ListItemText position="right" fontSize="subTitle">
+                        <ListItem.ListItemText
+                            position="right"
+                            fontSize="subTitle">
                             {`${t("sidebar.currentVersion")}${deviceInfoModule.getVersion()}`}
                         </ListItem.ListItemText>
                     </ListItem>
-                    <ListItem withHorizontalPadding key="about" onPress={() => navigateToSetting("about")}>
-                        <ListItem.ListItemIcon icon="information-circle" width={rpx(48)} />
-                        <ListItem.Content title={`${t("common.about")} ${deviceInfoModule.getApplicationName()}`} />
+                    <ListItem
+                        withHorizontalPadding
+                        key={"about"}
+                        onPress={() => {
+                            navigateToSetting("about");
+                        }}>
+                        <ListItem.ListItemIcon
+                            icon={"information-circle"}
+                            width={rpx(48)}
+                        />
+                        <ListItem.Content
+                            title={`${t("common.about")} ${deviceInfoModule.getApplicationName()}`}
+                        />
                     </ListItem>
                 </View>
 
                 <Divider />
-                <ListItem withHorizontalPadding onPress={() => BackHandler.exitApp()}>
-                    <ListItem.ListItemIcon icon="home-outline" width={rpx(48)} />
+                <ListItem
+                    withHorizontalPadding
+                    onPress={() => {
+                        // 仅安卓生效
+                        BackHandler.exitApp();
+                    }}>
+                    <ListItem.ListItemIcon
+                        icon={"home-outline"}
+                        width={rpx(48)}
+                    />
                     <ListItem.Content title={t("sidebar.backToDesktop")} />
                 </ListItem>
-                <ListItem withHorizontalPadding onPress={async () => {
-                    await TrackPlayer.reset();
-                    NativeUtils.exitApp();
-                }}>
-                    <ListItem.ListItemIcon icon="power-outline" width={rpx(48)} />
+                <ListItem
+                    withHorizontalPadding
+                    onPress={async () => {
+                        await TrackPlayer.reset();
+                        NativeUtils.exitApp();
+                    }}>
+                    <ListItem.ListItemIcon
+                        icon={"power-outline"}
+                        width={rpx(48)}
+                    />
                     <ListItem.Content title={t("sidebar.exitApp")} />
                 </ListItem>
             </DrawerContentScrollView>
@@ -169,8 +220,14 @@ function HomeDrawer(props: any) {
 export default memo(HomeDrawer, () => true);
 
 const style = StyleSheet.create({
-    wrapper: { flex: 1, backgroundColor: "#999999" },
-    scrollWrapper: { paddingTop: rpx(12) },
+    wrapper: {
+        flex: 1,
+        backgroundColor: "#999999",
+    },
+    scrollWrapper: {
+        paddingTop: rpx(12),
+    },
+
     header: {
         height: rpx(120),
         width: "100%",
@@ -179,9 +236,18 @@ const style = StyleSheet.create({
         alignItems: "center",
         marginLeft: rpx(24),
     },
-    card: { marginBottom: rpx(24) },
-    cardContent: { paddingHorizontal: 0 },
-    countDownText: { height: ITEM_HEIGHT, textAlignVertical: "center" },
+    card: {
+        marginBottom: rpx(24),
+    },
+    cardContent: {
+        paddingHorizontal: 0,
+    },
+
+    /** 倒计时 */
+    countDownText: {
+        height: ITEM_HEIGHT,
+        textAlignVertical: "center",
+    },
 });
 
 function _CountDownItem() {
@@ -189,7 +255,11 @@ function _CountDownItem() {
     const { t } = useI18N();
 
     return (
-        <ListItem withHorizontalPadding onPress={() => showPanel("TimingClose")}>
+        <ListItem
+            withHorizontalPadding
+            onPress={() => {
+                showPanel("TimingClose");
+            }}>
             <ListItem.ListItemIcon icon="alarm-outline" width={rpx(48)} />
             <ListItem.Content title={t("sidebar.scheduleClose")} />
             <ListItem.ListItemText position="right" fontSize="subTitle">
