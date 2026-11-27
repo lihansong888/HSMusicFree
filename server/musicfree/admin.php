@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $old = read_json_file($apiDir . '/version.json', ['version' => '0.6.2', 'changeLog' => [], 'download' => []]);
                 $version = trim((string)($_POST['version'] ?? ''));
                 if ($version === '') throw new RuntimeException('请填写软件版本号。');
-                $download = $old['download'] ?? [];
+                $download = ($version === (string)($old['version'] ?? '')) ? ($old['download'] ?? []) : [];
                 if (!empty($_FILES['apk']['name'])) {
                     $ext = strtolower(pathinfo($_FILES['apk']['name'], PATHINFO_EXTENSION));
                     if ($ext !== 'apk' || ($_FILES['apk']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
