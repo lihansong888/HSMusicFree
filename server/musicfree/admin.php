@@ -195,7 +195,7 @@ $update = read_json_file($apiDir . '/version.json', ['published' => false, 'vers
 <section class="card"><h2>管理员登录</h2><form method="post"><input type="hidden" name="action" value="login"><div class="field"><label>后台密码</label><input type="password" name="password" required autofocus></div><button>登录</button></form><p class="hint">首次登录默认密码：admin123456。登录后请立即在基本设置中修改。</p></section>
 <?php else: ?>
 <section class="card"><h2>一、音乐插件配置</h2><p class="hint">直接编辑完整 JSON。保存时检查 JSON 格式和插件名称、网址；不会限制插件数量，也不会擅自改动其他字段。</p>
-<form method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_plugins"><div class="field"><textarea name="plugins_json" rows="22" spellcheck="false"><?=h($pluginsRaw)?></textarea></div><button>校验并保存插件配置</button></form></section>
+<form id="pluginsForm" method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_plugins"><div class="field"><textarea id="pluginsJson" name="plugins_json" rows="22" spellcheck="false"><?=h($pluginsRaw)?></textarea></div><button>校验并保存插件配置</button></form></section>
 
 <section class="card"><h2>二、公告管理</h2><form method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_announcement">
 <label class="check"><input type="checkbox" name="announcement_enabled" value="1" <?=!empty($announcement['enabled'])?'checked':''?>> 发布公告（关闭后 APP 不弹出）</label>
@@ -219,5 +219,25 @@ $update = read_json_file($apiDir . '/version.json', ['published' => false, 'vers
 <?php endif; ?>
 </main>
 <script>
+document.getElementById('pluginsForm')?.addEventListener('submit',function(event){
+    const editor=document.getElementById('pluginsJson');
+    try {
+        const config=JSON.parse(editor.value);
+        if(!config || !Array.isArray(config.plugins)) throw new Error('缺少 plugins 数组');
+    } catch(error) {
+        event.preventDefault();
+        const message=String(error && error.message ? error.message : error);
+        const match=message.match(/(?:position|at)\s+(\d+)/i);
+        let detail=message;
+        if(match){
+            const position=Number(match[1]);
+            const before=editor.value.slice(0,position);
+            const line=before.split('\\n').length;
+            const column=position-before.lastIndexOf('\\n');
+            detail='第 '+line+' 行，第 '+column+' 列';
+        }
+        alert('JSON 格式错误：'+detail);
+    }
+});
 function addButton(){const box=document.getElementById('buttons');const i=box.querySelectorAll('.button-row').length;const row=document.createElement('div');row.className='button-row';row.innerHTML='<input class="wide" name="button_name[]" placeholder="按钮名称"><input class="wide" name="button_url[]" placeholder="https://..."><label class="check"><input type="checkbox" name="button_show['+i+']" value="1" checked>显示</label><input name="button_order[]" type="text" value="'+i+'" placeholder="排序"><button type="button" class="danger" onclick="this.parentNode.remove()">删除</button>';box.appendChild(row);}
 </script></body></html>
