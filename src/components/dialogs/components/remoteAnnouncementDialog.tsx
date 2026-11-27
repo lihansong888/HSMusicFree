@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import ThemeText from "@/components/base/themeText";
 import Button from "@/components/base/textButton";
 import openUrl from "@/utils/openUrl";
-import rpx from "@/utils/rpx";
+import rpx, { vh } from "@/utils/rpx";
 import Dialog from "./base";
 import { hideDialog } from "../useDialog";
 
@@ -32,7 +32,10 @@ export default function RemoteAnnouncementDialog(props: IRemoteAnnouncementDialo
             {buttons.length > 0 ? (
                 <View style={styles.buttons}>
                     {buttons.map((item, index) => (
-                        <Button key={index} style={styles.button} onPress={() => openUrl(item.url)}>
+                        <Button key={index} style={styles.button} onPress={() => {
+                                hideDialog();
+                                openUrl(item.url);
+                            }}>
                             {item.name}
                         </Button>
                     ))}
@@ -44,7 +47,7 @@ export default function RemoteAnnouncementDialog(props: IRemoteAnnouncementDialo
 }
 
 const styles = StyleSheet.create({
-    content: { maxHeight: rpx(520), paddingHorizontal: rpx(26) },
+    content: { maxHeight: vh(50), paddingHorizontal: rpx(26) },
     text: { lineHeight: rpx(42) },
     buttons: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: rpx(20), paddingTop: rpx(12) },
     button: { marginHorizontal: rpx(6), marginVertical: rpx(6) },
