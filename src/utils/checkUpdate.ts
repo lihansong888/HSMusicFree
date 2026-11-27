@@ -20,29 +20,29 @@ export default async function checkUpdate(): Promise<IUpdateInfo | undefined> {
             headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
         })).data;
 
-        if (
-            !rawInfo ||
-            typeof rawInfo.version !== "string" ||
-            !Array.isArray(rawInfo.download) ||
-            rawInfo.download.length === 0
-        ) {
+        if (!rawInfo || typeof rawInfo.version !== "string") {
             return undefined;
         }
 
-        const data = {
-            version: rawInfo.version,
-            changeLog: Array.isArray(rawInfo.changeLog) ? rawInfo.changeLog : [],
-            download: rawInfo.download.filter((url: unknown) =>
+        const needUpdate = compare(rawInfo.version, currentVersion, ">");
+        const download = Array.isArray(rawInfo.download)
+            ? rawInfo.download.filter((url: unknown) =>
                 typeof url === "string" && /^https?:\/\//i.test(url),
-            ),
-        };
-        if (data.download.length === 0) {
+            )
+            : [];
+
+        // 服务器未发布新版本时无需提供 APK 下载地址。
+        if (needUpdate && download.length === 0) {
             return undefined;
         }
 
         return {
-            needUpdate: compare(data.version, currentVersion, ">"),
-            data,
+            needUpdate,
+            data: {
+                version: rawInfo.version,
+                changeLog: Array.isArray(rawInfo.changeLog) ? rawInfo.changeLog : [],
+                download,
+            },
         };
     } catch {
         return undefined;
