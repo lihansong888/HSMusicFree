@@ -22,4 +22,4 @@
 
 请确认宝塔网站已启用 PHP，并为 `/musicfree/uploads/` 设置可写权限（建议目录权限 755，文件 644）。后台不需要数据库。
 
-若服务器的 Nginx 配置没有执行 PHP，请先修复 PHP 解析配置再使用后台。API JSON 文件由 Nginx 直接提供，APP 不访问后台登录页。
+若服务器的 Nginx 配置没有执行 PHP，请先修复 PHP 解析配置再使用后台。API JSON 文件由 Nginx 直接提供，APP 不访问后台登录页。\n\n建议把本目录的 `nginx-security.conf` 内容复制到宝塔该站点的 Nginx `server {}` 配置块中，禁止直接访问密码配置文件，并阻止上传目录执行 PHP。修改后执行 Nginx 配置检查并重载。
