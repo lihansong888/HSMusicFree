@@ -11,7 +11,8 @@
 
 - PHP 7.4 或更高版本，宝塔网站需要启用 PHP 解析。
 - 不需要 MySQL 数据库。
-- `musicfree` 目录及 `api`、`uploads` 子目录需要允许 PHP 写入。\n- 在宝塔 PHP 设置中，建议将 `upload_max_filesize` 和 `post_max_size` 调整到至少 `100M`，否则较大的 APK 可能上传失败。
+- `musicfree` 目录及 `api`、`uploads` 子目录需要允许 PHP 写入。
+- 在宝塔 PHP 设置中，建议将 `upload_max_filesize` 和 `post_max_size` 调整到至少 `100M`，否则较大的 APK 可能上传失败。
 
 ## 首次登录
 
