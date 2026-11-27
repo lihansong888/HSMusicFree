@@ -51,7 +51,7 @@ async function syncRemotePlugins() {
             const result = await PluginManager.installPluginFromUrl(item.url);
             if (!result.success) {
                 allInstalled = false;
-                errorLog("远程插件安装失败", item.name, result.message);
+                errorLog("远程插件安装失败", { name: item.name, message: result.message });
             }
         }
 
