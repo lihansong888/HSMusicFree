@@ -147,7 +147,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!move_uploaded_file($_FILES['apk']['tmp_name'], $uploadDir . '/' . $filename)) {
                         throw new RuntimeException('无法保存 APK，请检查 uploads 目录权限。');
                     }
-                    $download = ['https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/musicfree/uploads/' . rawurlencode($filename)];
+                    $requestHost = (string)($_SERVER['HTTP_HOST'] ?? '');
+                    $serverHost = strtolower((string)parse_url('https://' . $requestHost, PHP_URL_HOST));
+                    if ($serverHost === '' ||
+                        (!filter_var($serverHost, FILTER_VALIDATE_IP) &&
+                         !filter_var($serverHost, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME))) {
+                        throw new RuntimeException('无法识别当前网站域名，请检查服务器 Host 配置。');
+                    }
+                    $download = ['https://' . $serverHost . '/musicfree/uploads/' . rawurlencode($filename)];
                 }
                 $published = isset($_POST['update_published']);
                 if ($published && empty($download)) throw new RuntimeException('发布更新前，请先上传 APK。');
