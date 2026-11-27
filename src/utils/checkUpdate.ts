@@ -24,14 +24,16 @@ export default async function checkUpdate(): Promise<IUpdateInfo | undefined> {
             return undefined;
         }
 
-        const needUpdate = compare(rawInfo.version, currentVersion, ">");
+        const needUpdate =
+            rawInfo.published === false
+                ? false
+                : compare(rawInfo.version, currentVersion, ">");
         const download = Array.isArray(rawInfo.download)
             ? rawInfo.download.filter((url: unknown) =>
                 typeof url === "string" && /^https?:\/\//i.test(url),
             )
             : [];
 
-        // 服务器未发布新版本时无需提供 APK 下载地址。
         if (needUpdate && download.length === 0) {
             return undefined;
         }
