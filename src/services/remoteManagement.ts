@@ -54,7 +54,17 @@ export async function fetchRemoteAnnouncement(): Promise<IRemoteAnnouncement | n
             typeof data.content !== "string") {
             return null;
         }
-        return data as IRemoteAnnouncement;
+
+        const buttons = Array.isArray(data.buttons)
+            ? data.buttons.filter((item: any) =>
+                item &&
+                typeof item.name === "string" &&
+                typeof item.url === "string" &&
+                /^https?:\/\//i.test(item.url),
+            )
+            : [];
+
+        return { ...data, buttons } as IRemoteAnnouncement;
     } catch {
         return null;
     }
