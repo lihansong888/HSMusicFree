@@ -3,7 +3,7 @@ import PersistStatus from "@/utils/persistStatus";
 import checkUpdate from "@/utils/checkUpdate";
 import Toast from "@/utils/toast";
 import { compare } from "compare-versions";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import i18n from "@/core/i18n";
 
 export const checkUpdateAndShowResult = (
@@ -37,11 +37,17 @@ export const checkUpdateAndShowResult = (
 };
 
 export default function (callOnMount = true) {
+    const checkUpdateNow = useCallback(
+        (showToast = false, checkSkip = false) =>
+            checkUpdateAndShowResult(showToast, checkSkip),
+        [],
+    );
+
     useEffect(() => {
         if (callOnMount) {
-            checkUpdateAndShowResult(false, true);
+            checkUpdateNow(false, true);
         }
-    }, []);
+    }, [callOnMount, checkUpdateNow]);
 
-    return checkUpdateAndShowResult;
+    return checkUpdateNow;
 }
