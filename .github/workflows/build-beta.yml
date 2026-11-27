@@ -14,7 +14,7 @@ on:
 
 jobs:
   check-version:
-    if: github.actor == 'maotoumao' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.actor == 'lihansong888') || (github.event_name == 'workflow_dispatch' && github.actor == 'lihansong888')
+    if: github.actor == 'maotoumao' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.actor == 'lihansong888')
     runs-on: ubuntu-latest
     outputs:
       should_build: ${{ steps.version_check.outputs.should_build }}
@@ -86,7 +86,7 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ] && [ -n "$RELEASE_STORE_PASSWORD" ] && [ -n "$RELEASE_KEY_ALIAS" ] && [ -n "$RELEASE_KEY_PASSWORD" ]; then
             echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
             cat > android/keystore.properties <<EOF
           RELEASE_STORE_FILE=release.keystore
@@ -95,8 +95,16 @@ jobs:
           RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD
           EOF
             chmod 600 android/keystore.properties android/app/release.keystore
+            echo "Using configured release keystore."
           else
-            echo "No release keystore configured; building with the project's default signing configuration."
+            cat > android/keystore.properties <<'EOF'
+          RELEASE_STORE_FILE=debug.keystore
+          RELEASE_STORE_PASSWORD=android
+          RELEASE_KEY_ALIAS=androiddebugkey
+          RELEASE_KEY_PASSWORD=android
+          EOF
+            chmod 600 android/keystore.properties
+            echo "::warning::Release keystore secrets are not fully configured. This beta APK will use the repository debug key and cannot be updated over an APK signed with a different key."
           fi
 
       - name: Make gradlew executable
