@@ -26,11 +26,12 @@ export function BootstrapComponent() {
         let active = true;
 
         const showStartupAnnouncement = async () => {
-            // 先完成软件更新检查，避免更新弹窗和公告弹窗互相覆盖。
-            await checkUpdateNow(false, true);
+            // 并行获取更新和公告，待更新检查完成后再决定是否显示公告，避免弹窗互相覆盖。
+            const [, announcement] = await Promise.all([
+                checkUpdateNow(false, true),
+                fetchRemoteAnnouncement(),
+            ]);
             if (!active) return;
-
-            const announcement = await fetchRemoteAnnouncement();
             if (!active || !announcement || getCurrentDialog()?.name) {
                 return;
             }
