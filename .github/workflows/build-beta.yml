@@ -14,7 +14,7 @@ on:
 
 jobs:
   check-version:
-    if: github.actor == 'maotoumao' || github.event_name == 'push'
+    if: github.actor == 'maotoumao' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.actor == 'lihansong888')
     runs-on: ubuntu-latest
     outputs:
       should_build: ${{ steps.version_check.outputs.should_build }}
@@ -80,16 +80,24 @@ jobs:
         run: npm ci --prefer-offline --no-audit      
         
       - name: Setup Keystore (if secrets available)
-        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
-          cat > android/keystore.properties << 'EOF'
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            cat > android/keystore.properties <<EOF
           RELEASE_STORE_FILE=release.keystore
-          RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}
-          RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}
+          RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD
+          RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS
+          RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD
           EOF
-          chmod 600 android/keystore.properties android/app/release.keystore
+            chmod 600 android/keystore.properties android/app/release.keystore
+          else
+            echo "No release keystore configured; building with the project's default signing configuration."
+          fi
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
