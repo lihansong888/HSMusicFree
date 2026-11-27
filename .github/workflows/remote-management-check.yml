@@ -1,0 +1,38 @@
+name: Remote Management Checks
+
+on:
+  push:
+    branches: [feature/remote-server-management]
+    paths:
+      - "src/**"
+      - "server/musicfree/**"
+      - ".github/workflows/remote-management-check.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx tsc --noEmit
+
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+      - run: php -l server/musicfree/admin.php
+      - run: php -l server/musicfree/admin-config.php
+      - run: php -r 'foreach (glob("server/musicfree/api/*.json") as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "OK: $f\n"; }'

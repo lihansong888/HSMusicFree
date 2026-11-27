@@ -18,6 +18,7 @@ import { checkAndCreateDir } from "@/utils/fileUtils";
 import { errorLog, trace } from "@/utils/log";
 import { IPerfLogger, perfLogger } from "@/utils/perfLogger";
 import PersistStatus from "@/utils/persistStatus";
+import { fetchRemotePluginConfig } from "@/services/remoteManagement";
 import Toast from "@/utils/toast";
 import * as SplashScreen from "expo-splash-screen";
 import {  Linking, Platform } from "react-native";
@@ -36,6 +37,32 @@ downloader.injectDependencies(Config, PluginManager);
 lyricManager.injectDependencies(TrackPlayer, Config, PluginManager);
 MusicSheet.injectDependencies(Config);
 
+
+async function syncRemotePlugins() {
+    try {
+        const remoteConfig = await fetchRemotePluginConfig();
+        const fingerprint = JSON.stringify(remoteConfig);
+        if (PersistStatus.get("app.remotePluginConfigHash") === fingerprint) {
+            return;
+        }
+
+        let allInstalled = true;
+        for (const item of remoteConfig.plugins) {
+            const result = await PluginManager.installPluginFromUrl(item.url);
+            if (!result.success) {
+                allInstalled = false;
+                errorLog("远程插件安装失败", { name: item.name, message: result.message });
+            }
+        }
+
+        if (allInstalled) {
+            PersistStatus.set("app.remotePluginConfigHash", fingerprint);
+        }
+    } catch (error) {
+        // 远程服务不可用不能影响 APP 启动和本地播放。
+        errorLog("获取远程音乐插件配置失败", error);
+    }
+}
 
 async function bootstrapImpl() {
     await SplashScreen.preventAutoHideAsync()
@@ -99,6 +126,8 @@ async function bootstrapImpl() {
     // 加载插件
     await PluginManager.setup();
     logger.mark("插件初始化完成");
+    // 后台同步插件配置，不阻塞播放器初始化。
+    void syncRemotePlugins();
     trace("插件初始化完成");
 
     await initTrackPlayer(logger).catch(err => {

@@ -3,18 +3,61 @@ import Theme from "@/core/theme";
 import useCheckUpdate from "@/hooks/useCheckUpdate";
 import { useListenOrientationChange } from "@/hooks/useOrientation";
 import { getDefaultStore, useAtomValue } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AppState, NativeEventSubscription, useColorScheme } from "react-native";
 import bootstrapAtom from "./bootstrap.atom";
 import { initTrackPlayer } from "./bootstrap";
-import { showDialog } from "@/components/dialogs/useDialog";
+import { getCurrentDialog, showDialog } from "@/components/dialogs/useDialog";
+import { fetchRemoteAnnouncement } from "@/services/remoteManagement";
 import i18n from "@/core/i18n";
 
 export function BootstrapComponent() {
     const bootstrapState = useAtomValue(bootstrapAtom);
+    const announcementRequested = useRef(false);
 
     useListenOrientationChange();
-    useCheckUpdate();
+    const checkUpdateNow = useCheckUpdate(false);
+
+    useEffect(() => {
+        if (bootstrapState.state !== "Done" || announcementRequested.current) {
+            return;
+        }
+        announcementRequested.current = true;
+        let active = true;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
+        const showStartupAnnouncement = async () => {
+            // 并行获取更新和公告，避免两个弹窗互相覆盖。
+            const [, announcement] = await Promise.all([
+                checkUpdateNow(false, true),
+                fetchRemoteAnnouncement(),
+            ]);
+            if (!active || !announcement) return;
+
+            let attempts = 0;
+            const showWhenDialogClosed = () => {
+                if (!active) return;
+                if (getCurrentDialog()?.name) {
+                    if (attempts++ < 30) {
+                        timer = setTimeout(showWhenDialogClosed, 1000);
+                    }
+                    return;
+                }
+                showDialog("RemoteAnnouncementDialog", {
+                    title: announcement.title,
+                    content: announcement.content,
+                    buttons: announcement.buttons ?? [],
+                });
+            };
+            showWhenDialogClosed();
+        };
+
+        void showStartupAnnouncement();
+        return () => {
+            active = false;
+            if (timer) clearTimeout(timer);
+        };
+    }, [bootstrapState.state, checkUpdateNow]);
 
     const followSystem = useAppConfig("theme.followSystem");
 
