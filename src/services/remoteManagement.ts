@@ -13,8 +13,8 @@ export interface IRemotePluginConfig {
 
 export interface IRemoteAnnouncement {
     enabled: boolean;
-    title?: string;
-    content?: string;
+    title: string;
+    content: string;
     buttons?: Array<{
         name: string;
         url: string;
