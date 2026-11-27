@@ -88,7 +88,7 @@ jobs:
         run: |
           if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
             echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
-            cat > android/keystore.properties << 'EOF'
+            cat > android/keystore.properties <<EOF
           RELEASE_STORE_FILE=release.keystore
           RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD
           RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS
