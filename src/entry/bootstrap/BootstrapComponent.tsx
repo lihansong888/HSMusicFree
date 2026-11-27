@@ -16,16 +16,22 @@ export function BootstrapComponent() {
     const announcementRequested = useRef(false);
 
     useListenOrientationChange();
-    useCheckUpdate();
+    const checkUpdateNow = useCheckUpdate(false);
 
     useEffect(() => {
         if (bootstrapState.state !== "Done" || announcementRequested.current) {
             return;
         }
         announcementRequested.current = true;
-        const timer = setTimeout(async () => {
+        let active = true;
+
+        const showStartupAnnouncement = async () => {
+            // 先完成软件更新检查，避免更新弹窗和公告弹窗互相覆盖。
+            await checkUpdateNow(false, true);
+            if (!active) return;
+
             const announcement = await fetchRemoteAnnouncement();
-            if (!announcement || getCurrentDialog()?.name) {
+            if (!active || !announcement || getCurrentDialog()?.name) {
                 return;
             }
             showDialog("RemoteAnnouncementDialog", {
@@ -33,10 +39,13 @@ export function BootstrapComponent() {
                 content: announcement.content,
                 buttons: announcement.buttons ?? [],
             });
-        }, 1800);
-        return () => clearTimeout(timer);
-    }, [bootstrapState.state]);
+        };
 
+        void showStartupAnnouncement();
+        return () => {
+            active = false;
+        };
+    }, [bootstrapState.state, checkUpdateNow]);
 
     const followSystem = useAppConfig("theme.followSystem");
 
