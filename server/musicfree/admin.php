@@ -15,13 +15,25 @@ if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 $config = require $configPath;
 if (empty($config['password_hash'])) {
     $config['password_hash'] = password_hash('admin123456', PASSWORD_DEFAULT);
-    if (file_put_contents($configPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX) === false) {
+    try {
+        write_file_atomic($configPath, "<?php\nreturn " . var_export($config, true) . ";\n");
+    } catch (Throwable $error) {
         http_response_code(500);
         exit('后台配置文件不可写，请检查 musicfree 目录权限。');
     }
     if (function_exists('opcache_invalidate')) opcache_invalidate($configPath, true);
 }
 
+function write_file_atomic(string $path, string $contents): void {
+    $temporaryPath = $path . '.tmp.' . bin2hex(random_bytes(8));
+    if (file_put_contents($temporaryPath, $contents, LOCK_EX) === false) {
+        throw new RuntimeException('无法写入临时文件，请检查目录权限。');
+    }
+    if (!rename($temporaryPath, $path)) {
+        @unlink($temporaryPath);
+        throw new RuntimeException('无法替换目标文件，请检查目录权限。');
+    }
+}
 function h($value): string {
     return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
@@ -32,9 +44,10 @@ function read_json_file(string $path, array $fallback): array {
 }
 function write_json_file(string $path, array $data): void {
     $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-    if ($json === false || file_put_contents($path, $json . "\n", LOCK_EX) === false) {
-        throw new RuntimeException('写入文件失败，请检查目录权限。');
+    if ($json === false) {
+        throw new RuntimeException('生成 JSON 失败。');
     }
+    write_file_atomic($path, $json . "\n");
 }
 function csrf_check(): void {
     if (!isset($_POST['csrf'], $_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], (string)$_POST['csrf'])) {
@@ -85,9 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // 保存原始 JSON 文本，保留用户的字段和格式。
                 json_decode($raw);
                 if (json_last_error() !== JSON_ERROR_NONE) throw new RuntimeException('JSON 格式错误：' . json_last_error_msg());
-                if (file_put_contents($apiDir . '/plugins.json', rtrim($raw) . "\n", LOCK_EX) === false) {
-                    throw new RuntimeException('保存失败，请检查 api 目录权限。');
-                }
+                write_file_atomic($apiDir . '/plugins.json', rtrim($raw) . "\n");
                 $message = '音乐插件配置已保存。';
             } elseif ($action === 'save_announcement') {
                 $announcementTitle = trim((string)($_POST['announcement_title'] ?? ''));
@@ -155,9 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!password_verify($oldPassword, $config['password_hash'])) throw new RuntimeException('当前密码不正确。');
                 if (strlen($newPassword) < 8) throw new RuntimeException('新密码至少需要 8 位。');
                 $config['password_hash'] = password_hash($newPassword, PASSWORD_DEFAULT);
-                if (file_put_contents($configPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX) === false) {
-                    throw new RuntimeException('无法保存新密码，请检查 musicfree 目录权限。');
-                }
+                write_file_atomic($configPath, "<?php\nreturn " . var_export($config, true) . ";\n");
                 if (function_exists('opcache_invalidate')) opcache_invalidate($configPath, true);
                 $message = '后台密码已修改，请记住新密码。';
             } else {
