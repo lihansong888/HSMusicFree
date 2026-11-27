@@ -1,0 +1,50 @@
+{
+    "desc": "0.2.0",
+    "plugins": [
+        {
+            "name": "歌词网",
+            "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/geciwang/index.js",
+            "version": "0.0.0"
+        },
+        {
+            "name": "歌词千寻",
+            "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/geciqianxun/index.js",
+            "version": "0.0.0"
+        },
+        {
+            "name": "爱听音乐网",
+            "url": "https://gitee.com/lihansong86220952/yinyue/raw/master/JS/at.js",
+            "version": "0.0.6"
+        },
+        {
+            "name": "种子音乐",
+            "url": "https://gitee.com/lihansong86220952/yinyue/raw/master/JS/zz.js",
+            "version": "0.1.0"
+        },
+        {
+            "name": "qq",
+            "url": "http://music.haitangw.net/cqapi/qq.js",
+            "version": "0.1.0"
+        },
+        {
+            "name": "酷G",
+            "url": "http://music.haitangw.net/cqapi/kg.js",
+            "version": "0.1.0"
+        },
+        {
+            "name": "网Y",
+            "url": "http://music.haitangw.net/cqapi/wy.js",
+            "version": "0.1.0"
+        },
+        {
+            "name": "酷W",
+            "url": "http://music.haitangw.net/cqapi/kw.js",
+            "version": "0.1.0"
+        },
+        {
+            "name": "猫耳FM",
+            "url": "https://gitee.com/lihansong86220952/yinyue/raw/master/JS/maoerfm.js",
+            "version": "0.1.4"
+        }
+    ]
+}
