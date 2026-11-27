@@ -83,6 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $message = '音乐插件配置已保存。';
             } elseif ($action === 'save_announcement') {
+                $announcementTitle = trim((string)($_POST['announcement_title'] ?? ''));
+                $announcementContent = trim((string)($_POST['announcement_content'] ?? ''));
+                if (isset($_POST['announcement_enabled']) && ($announcementTitle === '' || $announcementContent === '')) {
+                    throw new RuntimeException('发布公告前，请填写公告标题和正文。');
+                }
                 $buttons = [];
                 $names = $_POST['button_name'] ?? [];
                 $urls = $_POST['button_url'] ?? [];
@@ -104,8 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 write_json_file($apiDir . '/announcement.json', [
                     'enabled' => isset($_POST['announcement_enabled']),
-                    'title' => trim((string)($_POST['announcement_title'] ?? '')),
-                    'content' => trim((string)($_POST['announcement_content'] ?? '')),
+                    'title' => $announcementTitle,
+                    'content' => $announcementContent,
                     'buttons' => $buttons,
                 ]);
                 $message = '公告设置已保存。';
