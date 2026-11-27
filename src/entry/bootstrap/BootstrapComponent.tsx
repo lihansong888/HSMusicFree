@@ -31,7 +31,6 @@ export function BootstrapComponent() {
                 checkUpdateNow(false, true),
                 fetchRemoteAnnouncement(),
             ]);
-            if (!active) return;
             if (!active || !announcement || getCurrentDialog()?.name) {
                 return;
             }
