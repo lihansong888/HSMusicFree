@@ -8,8 +8,8 @@ import { AppState, NativeEventSubscription, useColorScheme } from "react-native"
 import bootstrapAtom from "./bootstrap.atom";
 import { initTrackPlayer } from "./bootstrap";
 import { getCurrentDialog, showDialog } from "@/components/dialogs/useDialog";
-import i18n from "@/core/i18n";
 import { fetchRemoteAnnouncement } from "@/services/remoteManagement";
+import i18n from "@/core/i18n";
 
 export function BootstrapComponent() {
     const bootstrapState = useAtomValue(bootstrapAtom);
@@ -18,42 +18,53 @@ export function BootstrapComponent() {
     useListenOrientationChange();
     useCheckUpdate();
 
-    const followSystem = useAppConfig("theme.followSystem");
-    const colorScheme = useColorScheme();
-
     useEffect(() => {
-        if (followSystem) {
-            if (colorScheme === "dark") Theme.setTheme("p-dark");
-            else if (colorScheme === "light") Theme.setTheme("p-light");
+        if (bootstrapState.state !== "Done" || announcementRequested.current) {
+            return;
         }
-    }, [colorScheme, followSystem]);
-
-    useEffect(() => {
-        if (bootstrapState.state !== "Done" || announcementRequested.current) return;
         announcementRequested.current = true;
-
         const timer = setTimeout(async () => {
             const announcement = await fetchRemoteAnnouncement();
-            if (!announcement || getCurrentDialog()?.name) return;
+            if (!announcement || getCurrentDialog()?.name) {
+                return;
+            }
             showDialog("RemoteAnnouncementDialog", {
                 title: announcement.title,
                 content: announcement.content,
                 buttons: announcement.buttons ?? [],
             });
         }, 1800);
-
         return () => clearTimeout(timer);
     }, [bootstrapState.state]);
+
+
+    const followSystem = useAppConfig("theme.followSystem");
+
+    const colorScheme = useColorScheme();
+
+    useEffect(() => {
+        if (followSystem) {
+            if (colorScheme === "dark") {
+                Theme.setTheme("p-dark");
+            } else if (colorScheme === "light") {
+                Theme.setTheme("p-light");
+            }
+        }
+    }, [colorScheme, followSystem]);
 
     useEffect(() => {
         let appStateEventSubscription: NativeEventSubscription | null = null;
 
         const reinitializeTrackPlayerWithDialog = () => {
             showDialog("LoadingDialog", {
-                title: i18n.t("dialog.loading.reinitializeTrackPlayer"),
+                title: i18n.t("dialog.loading.reinitializeTrackPlayer"), 
                 promise: initTrackPlayer(),
-                onResolve(data, hideDialog) { hideDialog(); },
-                onReject(reason, hideDialog) { hideDialog(); },
+                onResolve(data, hideDialog) {
+                    hideDialog();
+                },
+                onReject(reason, hideDialog) {
+                    hideDialog();
+                },
             });
         };
 
@@ -61,7 +72,7 @@ export function BootstrapComponent() {
             if (AppState.currentState === "active") {
                 reinitializeTrackPlayerWithDialog();
             } else {
-                appStateEventSubscription = AppState.addEventListener("change", nextState => {
+                appStateEventSubscription = AppState.addEventListener("change", (nextState) => {
                     if (nextState === "active" && getDefaultStore().get(bootstrapAtom).state === "TrackPlayerError") {
                         reinitializeTrackPlayerWithDialog();
                     }
@@ -70,7 +81,9 @@ export function BootstrapComponent() {
         }
 
         return () => {
-            if (appStateEventSubscription) appStateEventSubscription.remove();
+            if (appStateEventSubscription) {
+                appStateEventSubscription.remove();
+            }
         };
     }, [bootstrapState]);
 
