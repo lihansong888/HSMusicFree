@@ -24,26 +24,38 @@ export function BootstrapComponent() {
         }
         announcementRequested.current = true;
         let active = true;
+        let timer: ReturnType<typeof setTimeout> | undefined;
 
         const showStartupAnnouncement = async () => {
-            // 并行获取更新和公告，待更新检查完成后再决定是否显示公告，避免弹窗互相覆盖。
+            // 并行获取更新和公告，避免两个弹窗互相覆盖。
             const [, announcement] = await Promise.all([
                 checkUpdateNow(false, true),
                 fetchRemoteAnnouncement(),
             ]);
-            if (!active || !announcement || getCurrentDialog()?.name) {
-                return;
-            }
-            showDialog("RemoteAnnouncementDialog", {
-                title: announcement.title,
-                content: announcement.content,
-                buttons: announcement.buttons ?? [],
-            });
+            if (!active || !announcement) return;
+
+            let attempts = 0;
+            const showWhenDialogClosed = () => {
+                if (!active) return;
+                if (getCurrentDialog()?.name) {
+                    if (attempts++ < 30) {
+                        timer = setTimeout(showWhenDialogClosed, 1000);
+                    }
+                    return;
+                }
+                showDialog("RemoteAnnouncementDialog", {
+                    title: announcement.title,
+                    content: announcement.content,
+                    buttons: announcement.buttons ?? [],
+                });
+            };
+            showWhenDialogClosed();
         };
 
         void showStartupAnnouncement();
         return () => {
             active = false;
+            if (timer) clearTimeout(timer);
         };
     }, [bootstrapState.state, checkUpdateNow]);
 
