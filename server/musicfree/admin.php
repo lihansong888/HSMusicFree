@@ -135,7 +135,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($action === 'save_update') {
                 $old = read_json_file($apiDir . '/version.json', ['version' => '0.6.2', 'changeLog' => [], 'download' => []]);
                 $version = trim((string)($_POST['version'] ?? ''));
-                if ($version === '') throw new RuntimeException('请填写软件版本号。');
+                if (!preg_match('/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$/', $version)) {
+                    throw new RuntimeException('版本号格式无效，请使用 1.2.3 或 1.2.3-beta.1。');
+                }
                 $download = ($version === (string)($old['version'] ?? '')) ? ($old['download'] ?? []) : [];
                 if (!empty($_FILES['apk']['name'])) {
                     $ext = strtolower(pathinfo($_FILES['apk']['name'], PATHINFO_EXTENSION));
