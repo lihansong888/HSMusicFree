@@ -12,6 +12,7 @@ on:
       - "tsconfig.json"
   pull_request:
     branches: [master]
+  workflow_dispatch:
     paths:
       - "src/**"
       - "server/musicfree/**"
@@ -37,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
+          php-version: "7.4"
       - run: php -l server/musicfree/admin.php
       - run: php -l server/musicfree/admin-config.php
       - run: php -r 'foreach (glob("server/musicfree/api/*.json") as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "OK: $f\n"; }'
