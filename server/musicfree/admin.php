@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_secure', '1');
+ini_set('session.cookie_samesite', 'Strict');
 session_start();
 
 $base = __DIR__;
@@ -12,7 +15,11 @@ if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 $config = require $configPath;
 if (empty($config['password_hash'])) {
     $config['password_hash'] = password_hash('admin123456', PASSWORD_DEFAULT);
-    file_put_contents($configPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX);
+    if (file_put_contents($configPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX) === false) {
+        http_response_code(500);
+        exit('后台配置文件不可写，请检查 musicfree 目录权限。');
+    }
+    if (function_exists('opcache_invalidate')) opcache_invalidate($configPath, true);
 }
 
 function h($value): string {
@@ -148,7 +155,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!password_verify($oldPassword, $config['password_hash'])) throw new RuntimeException('当前密码不正确。');
                 if (strlen($newPassword) < 8) throw new RuntimeException('新密码至少需要 8 位。');
                 $config['password_hash'] = password_hash($newPassword, PASSWORD_DEFAULT);
-                file_put_contents($configPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX);
+                if (file_put_contents($configPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX) === false) {
+                    throw new RuntimeException('无法保存新密码，请检查 musicfree 目录权限。');
+                }
+                if (function_exists('opcache_invalidate')) opcache_invalidate($configPath, true);
                 $message = '后台密码已修改，请记住新密码。';
             } else {
                 throw new RuntimeException('未知操作。');
