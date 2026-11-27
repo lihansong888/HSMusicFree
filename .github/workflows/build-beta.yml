@@ -38,6 +38,10 @@ jobs:
             echo "🔧 Force build triggered by workflow_dispatch"
             echo "should_build=true" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "🔧 Build triggered by a master workflow/package update"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
           else
             echo "❌ Version does not match beta format or not forced: $VERSION"
             echo "should_build=false" >> $GITHUB_OUTPUT
