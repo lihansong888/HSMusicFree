@@ -232,8 +232,8 @@ document.getElementById('pluginsForm')?.addEventListener('submit',function(event
         if(match){
             const position=Number(match[1]);
             const before=editor.value.slice(0,position);
-            const line=before.split('\\n').length;
-            const column=position-before.lastIndexOf('\\n');
+            const line=before.split(String.fromCharCode(10)).length;
+            const column=position-before.lastIndexOf(String.fromCharCode(10));
             detail='第 '+line+' 行，第 '+column+' 列';
         }
         alert('JSON 格式错误：'+detail);
