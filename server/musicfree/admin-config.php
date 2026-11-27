@@ -1,5 +1,5 @@
 <?php
-// 管理后台密码配置。请通过后台修改密码，不要删除此文件。
+// 首次访问时由 admin.php 初始化默认密码哈希。
 return [
-    'password_hash' => '__INITIAL_HASH__',
+    'password_hash' => '',
 ];
