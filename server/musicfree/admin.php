@@ -100,6 +100,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (json_last_error() !== JSON_ERROR_NONE) throw new RuntimeException('JSON 格式错误：' . json_last_error_msg());
                 write_file_atomic($apiDir . '/plugins.json', rtrim($raw) . "\n");
                 $message = '音乐插件配置已保存。';
+            } elseif ($action === 'save_about') {
+                $raw = (string)($_POST['about_json'] ?? '');
+                $data = json_decode($raw, true);
+                if (!is_array($data) || !isset($data['header']) || !is_array($data['header']) ||
+                    !isset($data['body']) || !is_array($data['body'])) {
+                    throw new RuntimeException('关于页面 JSON 格式错误，必须包含 header 对象和 body 数组。');
+                }
+                if (isset($data['enabled']) && !is_bool($data['enabled'])) {
+                    throw new RuntimeException('enabled 必须是 true 或 false。');
+                }
+                $validUrl = function($url) {
+                    return is_string($url) && filter_var($url, FILTER_VALIDATE_URL) && preg_match('~^https?://~i', $url);
+                };
+                if (!empty($data['header']['avatar']) && !$validUrl($data['header']['avatar'])) {
+                    throw new RuntimeException('头像必须填写有效的 HTTP(S) 图片地址。');
+                }
+                if (isset($data['header']['contacts'])) {
+                    if (!is_array($data['header']['contacts'])) throw new RuntimeException('header.contacts 必须是数组。');
+                    foreach ($data['header']['contacts'] as $i => $contact) {
+                        if (!is_array($contact) || empty($contact['label']) || !isset($contact['value'])) {
+                            throw new RuntimeException('第 ' . ($i + 1) . ' 个联系信息缺少 label 或 value。');
+                        }
+                        if (!empty($contact['url']) && !$validUrl($contact['url'])) {
+                            throw new RuntimeException('第 ' . ($i + 1) . ' 个联系信息的网址无效。');
+                        }
+                    }
+                }
+                $allowedTypes = ['heading', 'text', 'link', 'image', 'divider'];
+                foreach ($data['body'] as $i => $block) {
+                    if (!is_array($block) || !in_array(($block['type'] ?? ''), $allowedTypes, true)) {
+                        throw new RuntimeException('正文第 ' . ($i + 1) . ' 项类型无效。支持 heading、text、link、image、divider。');
+                    }
+                    if (in_array($block['type'], ['heading', 'text'], true) && !isset($block['text'])) {
+                        throw new RuntimeException('正文第 ' . ($i + 1) . ' 项缺少 text。');
+                    }
+                    if ($block['type'] === 'link' && (empty($block['label']) || !$validUrl($block['url'] ?? null))) {
+                        throw new RuntimeException('正文第 ' . ($i + 1) . ' 项链接需要 label 和有效 HTTP(S) url。');
+                    }
+                    if ($block['type'] === 'image' && !$validUrl($block['url'] ?? null)) {
+                        throw new RuntimeException('正文第 ' . ($i + 1) . ' 项图片需要有效 HTTP(S) 图片地址。');
+                    }
+                }
+                write_file_atomic($apiDir . '/about.json', rtrim($raw) . "\n");
+                $message = '关于页面配置已保存。APP 下次打开关于页面时会读取新内容。';
             } elseif ($action === 'save_announcement') {
                 $announcementTitle = trim((string)($_POST['announcement_title'] ?? ''));
                 $announcementContent = trim((string)($_POST['announcement_content'] ?? ''));
@@ -191,6 +235,7 @@ if ($loggedIn && empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_by
 $csrf = $_SESSION['csrf'] ?? '';
 $pluginsRaw = is_file($apiDir . '/plugins.json') ? (string)file_get_contents($apiDir . '/plugins.json') : "{\n    \"desc\": \"0.2.0\",\n    \"plugins\": []\n}";
 $announcement = read_json_file($apiDir . '/announcement.json', ['enabled' => false, 'title' => '', 'content' => '', 'buttons' => []]);
+$aboutRaw = is_file($apiDir . '/about.json') ? (string)file_get_contents($apiDir . '/about.json') : '{"enabled":false,"header":{"avatar":"","name":"","contacts":[]},"body":[]}';
 $update = read_json_file($apiDir . '/version.json', ['published' => false, 'version' => '0.6.2', 'changeLog' => [], 'download' => []]);
 ?>
 <!doctype html>
@@ -215,7 +260,16 @@ $update = read_json_file($apiDir . '/version.json', ['published' => false, 'vers
 <section class="card"><h2>一、音乐插件配置</h2><p class="hint">直接编辑后台配置文件（desc + plugins）。APP 启动时会自动读取并按配置加载插件。每项中的 url 是插件 JS 脚本文件地址，不是音乐 API 接口；普通用户无需填写或连接任何接口。保存时只校验 JSON 格式及插件名称、脚本地址，不限制插件数量，也不会擅自改动其他字段。</p>
 <form id="pluginsForm" method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_plugins"><div class="field"><textarea id="pluginsJson" name="plugins_json" rows="22" spellcheck="false"><?=h($pluginsRaw)?></textarea></div><button>校验并保存插件配置</button></form></section>
 
-<section class="card"><h2>二、公告管理</h2><form method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_announcement">
+<section class="card"><h2>二、关于页面自定义</h2>
+<p class="hint">保留 APP 原有关于页面布局和横竖屏适配。启用后标题显示为“关于”，内容由此处配置。可添加作者头像、联系信息、文字段落、小标题、图片、超链接和分隔线。图片及链接填写公开可访问的 HTTP(S) 地址。</p>
+<form method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_about">
+<div class="field"><textarea name="about_json" rows="24" spellcheck="false"><?=h($aboutRaw)?></textarea></div>
+<button>校验并保存关于页面</button>
+</form>
+<p class="hint">配置说明：header.avatar 为头像图片网址；header.name 为作者/介绍；header.contacts 为联系资料数组（label、value、可选 url）。body 按顺序展示，支持 heading（标题）、text（文字，可设 bold:true）、link（链接）、image（图片，可设 caption）、divider（分隔线）。enabled 设置为 true 后生效。</p>
+</section>
+
+<section class="card"><h2>三、公告管理</h2><form method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_announcement">
 <label class="check"><input type="checkbox" name="announcement_enabled" value="1" <?=!empty($announcement['enabled'])?'checked':''?>> 发布公告（关闭后 APP 不弹出）</label>
 <div class="field"><label>公告标题</label><input type="text" name="announcement_title" value="<?=h($announcement['title']??'')?>"></div>
 <div class="field"><label>公告正文</label><textarea name="announcement_content" rows="6"><?=h($announcement['content']??'')?></textarea></div>
@@ -223,7 +277,7 @@ $update = read_json_file($apiDir . '/version.json', ['published' => false, 'vers
 <?php foreach (($announcement['buttons']??[]) as $i=>$b): ?><div class="button-row"><input class="wide" name="button_name[<?=$i?>]" placeholder="按钮名称" value="<?=h($b['name']??'')?>"><input class="wide" name="button_url[<?=$i?>]" placeholder="https://..." value="<?=h($b['url']??'')?>"><label class="check"><input type="checkbox" name="button_show[<?=$i?>]" value="1" <?=($b['show']??true)?'checked':''?>>显示</label><input name="button_order[<?=$i?>]" type="text" value="<?=h($b['order']??$i)?>" placeholder="排序"><button type="button" class="danger" onclick="this.parentNode.remove()">删除</button></div><?php endforeach; ?>
 </div></div><button>保存公告</button></form></section>
 
-<section class="card"><h2>三、软件更新</h2><p class="hint">上传 APK 并发布后，APP 的自动检查和侧边栏“检查更新”都会读取此处。撤回发布不会删除已上传的 APK。</p>
+<section class="card"><h2>四、软件更新</h2><p class="hint">上传 APK 并发布后，APP 的自动检查和侧边栏“检查更新”都会读取此处。撤回发布不会删除已上传的 APK。</p>
 <form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_update">
 <div class="field"><label>版本号</label><input type="text" name="version" value="<?=h($update['version']??'0.6.2')?>" required></div>
 <div class="field"><label>更新说明（每行一条）</label><textarea name="change_log" rows="4"><?=h(implode("\n",$update['changeLog']??[]))?></textarea></div>
@@ -231,7 +285,7 @@ $update = read_json_file($apiDir . '/version.json', ['published' => false, 'vers
 <label class="check"><input type="checkbox" name="update_published" value="1" <?=!empty($update['published'])?'checked':''?>> 发布此版本更新</label>
 <div class="row" style="margin-top:14px"><button>保存软件更新设置</button><span class="status">当前状态：<?=!empty($update['published'])?'已发布':'未发布 / 已撤回'?></span></div></form></section>
 
-<section class="card"><h2>四、基本设置</h2><p class="hint">服务器接口运行方式：静态 JSON + PHP 管理页面，无需数据库。PHP 版本：<?=h(PHP_VERSION)?>；插件配置文件：<?=is_writable($apiDir.'/plugins.json')?'可写':'请检查 api 目录权限'?>。</p>
+<section class="card"><h2>五、基本设置</h2><p class="hint">服务器接口运行方式：静态 JSON + PHP 管理页面，无需数据库。PHP 版本：<?=h(PHP_VERSION)?>；插件配置文件：<?=is_writable($apiDir.'/plugins.json')?'可写':'请检查 api 目录权限'?>。</p>
 <form method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="change_password">
 <div class="field"><label>当前密码</label><input type="password" name="old_password" required></div><div class="field"><label>新密码（至少 8 位）</label><input type="password" name="new_password" minlength="8" required></div><button>修改后台密码</button></form></section>
 <?php endif; ?>
