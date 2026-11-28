@@ -2,12 +2,14 @@ name: Beta 构建
 
 on:
   push:
-    branches: [dev]
-    paths: ['package.json']
+    branches: [dev, feature/remote-server-management]
+    paths:
+      - 'package.json'
+      - '.github/workflows/build-beta.yml'
   workflow_dispatch:
     inputs:
       force_build:
-        description: '强制构建 Beta 版本'
+        description: '强制构建测试 APK'
         required: false
         default: 'false'
         type: boolean
@@ -28,19 +30,11 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "Current version: $VERSION"
-          
-          # 检查版本是否符合 -beta.xx 格式
-          if [[ $VERSION =~ -beta\.[0-9]{1,2}$ ]]; then
-            echo "✅ Version matches beta format: $VERSION"
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.force_build }}" == "true" ]]; then
-            echo "🔧 Force build triggered by workflow_dispatch"
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if [[ $VERSION =~ -beta\.[0-9]{1,2}$ ]] || [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF}" == "refs/heads/feature/remote-server-management" ]] || [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && "${{ inputs.force_build }}" == "true" ]]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ Version does not match beta format or not forced: $VERSION"
-            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
           fi
 
   build-beta:
@@ -60,7 +54,7 @@ jobs:
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 20
           cache: 'npm'
 
@@ -77,51 +71,61 @@ jobs:
             ${{ runner.os }}-rn-
 
       - name: Install Dependencies
-        run: npm ci --prefer-offline --no-audit      
-        
-      - name: Setup Keystore (if secrets available)
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Setup Keystore
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+          mkdir -p android/app
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ] && [ -n "$RELEASE_STORE_PASSWORD" ] && [ -n "$RELEASE_KEY_ALIAS" ] && [ -n "$RELEASE_KEY_PASSWORD" ]; then
             echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
-            cat > android/keystore.properties <<EOF
-          RELEASE_STORE_FILE=release.keystore
-          RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD
-          RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS
-          RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD
-          EOF
-            chmod 600 android/keystore.properties android/app/release.keystore
+            STORE_PASSWORD="$RELEASE_STORE_PASSWORD"
+            KEY_ALIAS="$RELEASE_KEY_ALIAS"
+            KEY_PASSWORD="$RELEASE_KEY_PASSWORD"
+            echo "Using repository release signing key."
           else
-            echo "No release keystore configured; building with the project's default signing configuration."
+            keytool -genkeypair -v \
+              -keystore android/app/release.keystore \
+              -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=MusicFree Test, OU=Development, O=MusicFree, L=Unknown, S=Unknown, C=US"
+            STORE_PASSWORD=android
+            KEY_ALIAS=androiddebugkey
+            KEY_PASSWORD=android
+            echo "::warning::No release signing secrets configured. This is a test-signed APK and cannot replace an APK signed with another key."
           fi
+          cat > android/keystore.properties <<EOF
+          RELEASE_STORE_FILE=release.keystore
+          RELEASE_STORE_PASSWORD=$STORE_PASSWORD
+          RELEASE_KEY_ALIAS=$KEY_ALIAS
+          RELEASE_KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+          chmod 600 android/keystore.properties android/app/release.keystore
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build Beta APK
-        run: | 
+      - name: Build APK
+        run: |
           cd android
           ./gradlew assembleRelease --parallel --build-cache --configure-on-demand
 
       - name: List generated APKs
-        run: |
-          echo "📱 Generated APK files:"
-          find android/app/build/outputs/apk/release -name "*.apk" -exec ls -lh {} \;
+        run: find android/app/build/outputs/apk/release -name "*.apk" -exec ls -lh {} \;
 
-      - name: Upload Beta APKs
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: beta-apks-${{ needs.check-version.outputs.version }}
+          name: feature-apks-${{ needs.check-version.outputs.version }}
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
       - name: Build Summary
         run: |
-          echo "🎉 Beta build completed successfully!"
-          echo "📦 Version: ${{ needs.check-version.outputs.version }}"
-          echo "🚀 Triggered by: ${{ github.event_name }}"
-          echo "👤 Actor: ${{ github.actor }}"
+          echo "Feature branch test build completed."
+          echo "Version: ${{ needs.check-version.outputs.version }}"
+          echo "Branch: ${GITHUB_REF}"
