@@ -250,17 +250,17 @@ export default function BasicSetting() {
                 createSwitch(
                     t("basicSettings.autoUpdatePlugin"),
                     "basic.autoUpdatePlugin",
-                    autoUpdatePlugin ?? false,
+                    autoUpdatePlugin ?? true,
                 ),
                 createSwitch(
                     t("basicSettings.notCheckPluginVersion"),
                     "basic.notCheckPluginVersion",
-                    notCheckPluginVersion ?? false,
+                    notCheckPluginVersion ?? true,
                 ),
                 createSwitch(
                     t("basicSettings.lazyLoadPlugin"),
                     "basic.lazyLoadPlugin",
-                    lazyLoadPlugin ?? false,
+                    lazyLoadPlugin ?? true,
                 ),
             ],
         },
