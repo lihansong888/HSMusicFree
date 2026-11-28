@@ -314,7 +314,7 @@ export default function BasicSetting() {
                     t("basicSettings.defaultPlayQuality"),
                     "basic.defaultPlayQuality",
                     qualityKeys,
-                    defaultPlayQuality ?? "standard",
+                    defaultPlayQuality ?? "super",
                     {
                         low: t("musicQuality.low"),
                         standard: t("musicQuality.standard"),
