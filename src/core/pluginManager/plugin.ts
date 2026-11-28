@@ -968,7 +968,7 @@ export class Plugin {
         } catch (e: any) {
             this.state = PluginState.Error;
             this.errorReason = e?.errorReason ?? PluginErrorReason.CannotParse;
-            this.errorMessage = e?.message ?? String(e);
+            this.errorMessage = typeof e?.message === "string" ? e.message : undefined;
 
             errorLog(`${pluginPath}插件无法解析 `, {
                 errorReason: this.errorReason,
