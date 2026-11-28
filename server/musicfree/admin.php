@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($action === 'save_update') {
                 $old = read_json_file($apiDir . '/version.json', ['version' => '0.6.2', 'changeLog' => [], 'download' => []]);
                 $version = trim((string)($_POST['version'] ?? ''));
-                if (!preg_match('/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$/', $version)) {
+                if (!preg_match('/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/', $version)) {
                     throw new RuntimeException('版本号格式无效，请使用 1.2.3 或 1.2.3-beta.1。');
                 }
                 $download = ($version === (string)($old['version'] ?? '')) ? ($old['download'] ?? []) : [];
@@ -146,15 +146,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $safeVersion = preg_replace('/[^0-9A-Za-z._-]/', '_', $version);
                     $filename = 'musicfree-' . $safeVersion . '.apk';
-                    if (!move_uploaded_file($_FILES['apk']['tmp_name'], $uploadDir . '/' . $filename)) {
-                        throw new RuntimeException('无法保存 APK，请检查 uploads 目录权限。');
-                    }
                     $requestHost = (string)($_SERVER['HTTP_HOST'] ?? '');
                     $serverHost = strtolower((string)parse_url('https://' . $requestHost, PHP_URL_HOST));
                     if ($serverHost === '' ||
                         (!filter_var($serverHost, FILTER_VALIDATE_IP) &&
                          !filter_var($serverHost, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME))) {
                         throw new RuntimeException('无法识别当前网站域名，请检查服务器 Host 配置。');
+                    }
+                    if (!move_uploaded_file($_FILES['apk']['tmp_name'], $uploadDir . '/' . $filename)) {
+                        throw new RuntimeException('无法保存 APK，请检查 uploads 目录权限。');
                     }
                     $download = ['https://' . $serverHost . '/musicfree/uploads/' . rawurlencode($filename)];
                 }
