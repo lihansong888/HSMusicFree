@@ -70,7 +70,9 @@ async function syncRemotePlugins() {
         // 必须串行安装：每次安装都会基于当前插件列表更新 Jotai 状态，
         // 并行安装会产生状态覆盖，导致最后只留下部分插件。
         for (const item of remoteConfig.plugins) {
-            const result = await PluginManager.installPluginFromUrl(item.url);
+            const result = await PluginManager.installPluginFromUrl(item.url, {
+                notCheckVersion: Config.getConfig("basic.notCheckPluginVersion") ?? true,
+            });
             if (result.success) {
                 installedCount += 1;
             } else {
