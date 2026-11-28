@@ -1,0 +1,34 @@
+name: Publish Universal APK Release
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/publish-test-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: beta-apks-0.6.2
+          path: artifact
+          repository: ${{ github.repository }}
+          run-id: 46043833885
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish universal APK to stable test-latest URL
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK="artifact/app-universal-release.apk"
+          test -s "$APK"
+          gh release view test-latest >/dev/null 2>&1 || gh release create test-latest --title "MusicFree 0.6.2 通用版测试包" --notes "通用版 APK。来源：GitHub Actions run 46043833885。测试签名，仅供测试安装。"
+          gh release upload test-latest "$APK" --clobber
