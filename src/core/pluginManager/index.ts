@@ -276,6 +276,7 @@ class PluginManager implements IPluginManager, IInjectable {
         try {
             const funcCode = (
                 await axios.get(url, {
+                    timeout: 15000,
                     headers: {
                         "Cache-Control": "no-cache",
                         Pragma: "no-cache",
