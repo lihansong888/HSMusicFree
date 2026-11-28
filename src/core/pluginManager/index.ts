@@ -280,17 +280,21 @@ class PluginManager implements IPluginManager, IInjectable {
         config?: IInstallPluginConfig,
     ): Promise<IInstallPluginResult> {
         try {
-            const funcCode = (
-                await axios.get(url, {
-                    timeout: 15000,
-                    headers: {
-                        "Cache-Control": "no-cache",
-                        Pragma: "no-cache",
-                        Expires: "0",
-                    },
-                })
-            ).data;
-            if (funcCode) {
+            const response = await axios.get<string>(url, {
+                timeout: 15000,
+                responseType: "text",
+                transformResponse: [(data: any) => data],
+                headers: {
+                    "Cache-Control": "no-cache",
+                    Pragma: "no-cache",
+                    Expires: "0",
+                },
+            });
+            // 插件文件必须按原始 JavaScript 文本处理，避免 Axios 将以 { 或 [ 开头的源码自动解析成 JSON。
+            const funcCode = typeof response.data === "string"
+                ? response.data.replace(/^\\uFEFF/, "")
+                : "";
+            if (funcCode.trim().length > 0) {
                 const plugin = new Plugin(funcCode, "");
                 let allPlugins = [...this.getPlugins()];
                 const pluginIndex = allPlugins.findIndex(
