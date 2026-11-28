@@ -22,10 +22,11 @@ jobs:
           sudo apt-get install -y php-cli
           php -l server/musicfree/admin.php
           php -l server/musicfree/admin-config.php
+          php -r '$pattern = "/^\\\\d+\\\\.\\\\d+\\\\.\\\\d+(?:-[0-9A-Za-z.-]+)?(?:\\\\+[0-9A-Za-z.-]+)?$/"; foreach (["1.2.3", "1.2.3-beta.1", "2.0.0+build.7"] as $v) { if (!preg_match($pattern, $v)) { fwrite(STDERR, "Invalid expected version: $v\\n"); exit(1); } } foreach (["1.2", "v1.2.3", "1.2.3-"] as $v) { if (preg_match($pattern, $v)) { fwrite(STDERR, "Unexpected accepted version: $v\\n"); exit(1); } } echo "Version validation OK\\n";'
 
       - name: Validate JSON configuration
         run: |
-          php -r 'foreach (glob("server/musicfree/api/*.json") as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "OK: $f\\n"; }'
+          php -r 'foreach (glob("server/musicfree/api/*.json") as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "OK: $f" . PHP_EOL; }'
 
       - name: Create deployment archive
         run: |
@@ -33,6 +34,7 @@ jobs:
           cd server
           zip -r ../dist/musicfree-backend.zip musicfree
           cd ..
+          unzip -t dist/musicfree-backend.zip
           sha256sum dist/musicfree-backend.zip
 
       - name: Upload deployment package
