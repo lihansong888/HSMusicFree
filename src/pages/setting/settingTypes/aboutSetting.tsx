@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     Image,
     ScrollView,
@@ -13,8 +13,9 @@ import LinkText from "@/components/base/linkText";
 import useCheckUpdate from "@/hooks/useCheckUpdate.ts";
 import useOrientation from "@/hooks/useOrientation";
 import Divider from "@/components/base/divider";
+import { fetchRemoteAboutConfig, IRemoteAboutConfig } from "@/services/remoteManagement";
 
-export default function AboutSetting() {
+function LegacyAboutSetting() {
     const checkAndShowResult = useCheckUpdate();
     const orientation = useOrientation();
 
@@ -149,6 +150,73 @@ export default function AboutSetting() {
     );
 }
 
+function RemoteAboutSetting({ config }: { config: IRemoteAboutConfig }) {
+    const checkAndShowResult = useCheckUpdate();
+    const orientation = useOrientation();
+    const header = config.header;
+    return (
+        <View style={[
+            style.wrapper,
+            orientation === "horizontal" ? { flexDirection: "row" } : null,
+        ]}>
+            <View style={[
+                style.header,
+                orientation === "horizontal" ? style.horizontalSize : null,
+            ]}>
+                {header.avatar ? (
+                    <TouchableOpacity onPress={() => checkAndShowResult(true)}>
+                        <Image source={{ uri: header.avatar }} style={style.image} resizeMode="contain" />
+                    </TouchableOpacity>
+                ) : null}
+                {header.name ? <ThemeText style={style.margin}>{header.name}</ThemeText> : null}
+                <View style={style.contactContainer}>
+                    {(header.contacts || []).map((item, index) => (
+                        <ThemeText key={index} style={style.margin}>
+                            {item.label}:{" "}
+                            {item.url ? <LinkText linkTo={item.url}>{item.value}</LinkText> : item.value}
+                        </ThemeText>
+                    ))}
+                </View>
+            </View>
+            <ScrollView contentContainerStyle={style.scrollViewContainer} style={style.scrollView}>
+                {config.body.map((block, index) => {
+                    if (block.type === "heading") {
+                        return <ThemeText key={index} fontSize="title" style={style.content}>{block.text}</ThemeText>;
+                    }
+                    if (block.type === "text") {
+                        return <ThemeText key={index} style={style.content} fontWeight={block.bold ? "bold" : undefined}>{block.text}</ThemeText>;
+                    }
+                    if (block.type === "link") {
+                        return <ThemeText key={index} style={style.content}><LinkText linkTo={block.url}>{block.label}</LinkText></ThemeText>;
+                    }
+                    if (block.type === "image") {
+                        return (
+                            <View key={index} style={style.content}>
+                                <Image source={{ uri: block.url || "" }} style={style.remoteImage} resizeMode="contain" />
+                                {block.caption ? <ThemeText style={style.imageCaption}>{block.caption}</ThemeText> : null}
+                            </View>
+                        );
+                    }
+                    if (block.type === "divider") return <Divider key={index} style={style.content} />;
+                    return null;
+                })}
+            </ScrollView>
+        </View>
+    );
+}
+
+export default function AboutSetting() {
+    const [remoteConfig, setRemoteConfig] = useState<IRemoteAboutConfig | null>(null);
+    useEffect(() => {
+        let mounted = true;
+        fetchRemoteAboutConfig().then(config => {
+            if (mounted && config) setRemoteConfig(config);
+        });
+        return () => { mounted = false; };
+    }, []);
+    return remoteConfig ? <RemoteAboutSetting config={remoteConfig} /> : <LegacyAboutSetting />;
+}
+
 const style = StyleSheet.create({
     wrapper: {
         width: "100%",
@@ -181,6 +249,15 @@ const style = StyleSheet.create({
     content: {
         marginTop: rpx(24),
         lineHeight: rpx(48),
+    },
+    remoteImage: {
+        width: rpx(520),
+        height: rpx(360),
+        alignSelf: "center",
+    },
+    imageCaption: {
+        textAlign: "center",
+        marginTop: rpx(12),
     },
     wcChannel: {
         width: rpx(330),
