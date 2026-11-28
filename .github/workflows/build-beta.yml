@@ -3,6 +3,10 @@ name: Beta 构建
 permissions:
   contents: write
 
+concurrency:
+  group: musicfree-feature-beta-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [dev, feature/remote-server-management]
