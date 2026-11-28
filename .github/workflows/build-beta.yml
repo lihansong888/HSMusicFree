@@ -36,6 +36,7 @@ jobs:
 
   build-beta:
     needs: check-version
+    timeout-minutes: 30
     if: needs.check-version.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     steps:
