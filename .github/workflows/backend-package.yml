@@ -1,0 +1,44 @@
+name: MusicFree Backend Package
+
+on:
+  push:
+    branches:
+      - feature/remote-server-management
+    paths:
+      - "server/musicfree/**"
+      - ".github/workflows/backend-package.yml"
+  workflow_dispatch:
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate PHP syntax
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y php-cli
+          php -l server/musicfree/admin.php
+          php -l server/musicfree/admin-config.php
+
+      - name: Validate JSON configuration
+        run: |
+          php -r 'foreach (glob("server/musicfree/api/*.json") as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "OK: $f\\n"; }'
+
+      - name: Create deployment archive
+        run: |
+          mkdir -p dist
+          cd server
+          zip -r ../dist/musicfree-backend.zip musicfree
+          cd ..
+          sha256sum dist/musicfree-backend.zip
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: musicfree-backend-deploy
+          path: dist/musicfree-backend.zip
+          if-no-files-found: error
+          retention-days: 30
