@@ -174,6 +174,12 @@ class AppConfig implements IAppConfig {
             configStore.set("$schema", "3");
         }
 
+        if (schemaVersion < 4) {
+            // 定制版默认播放音质设为超高音质；仅迁移一次，之后保留用户自己的设置。
+            this.setConfig("basic.defaultPlayQuality", "super");
+            configStore.set("$schema", "4");
+        }
+
     }
 
     async setup(): Promise<void> {
