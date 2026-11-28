@@ -212,3 +212,8 @@
 
 
 </details>
+
+## 定制版本应用信息
+
+- 应用名称：寒松音乐
+- Android 包名：`com.hansong.music`
