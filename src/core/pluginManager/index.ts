@@ -260,7 +260,6 @@ class PluginManager implements IPluginManager, IInjectable {
                         : "插件无法解析，请检查插件代码格式或运行环境",
                 pluginName: plugin.name || undefined,
                 pluginHash: plugin.hash || undefined,
-                pluginUrl: url,
             };
         }
         return {
@@ -352,7 +351,13 @@ class PluginManager implements IPluginManager, IInjectable {
                 }
                 return {
                     success: false,
-                    message: "插件无法解析",
+                    message: plugin.errorMessage
+                        ? "插件无法解析：" + plugin.errorMessage
+                        : plugin.errorReason === 0
+                            ? "插件版本与当前 APP 不兼容"
+                            : "插件无法解析，请检查插件代码格式或运行环境",
+                    pluginName: plugin.name || undefined,
+                    pluginHash: plugin.hash || undefined,
                     pluginUrl: url,
                 };
             } else {
@@ -366,7 +371,7 @@ class PluginManager implements IPluginManager, IInjectable {
             devLog("error", "URL安装插件失败", e, e?.message);
             errorLog("URL安装插件失败", e);
 
-            if (e?.response?.statusCode === 404) {
+            if (e?.response?.status === 404) {
                 return {
                     success: false,
                     message: "插件不存在，请联系插件作者",
