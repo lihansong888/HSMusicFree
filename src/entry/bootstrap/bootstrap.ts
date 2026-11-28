@@ -18,7 +18,7 @@ import { checkAndCreateDir } from "@/utils/fileUtils";
 import { errorLog, trace } from "@/utils/log";
 import { IPerfLogger, perfLogger } from "@/utils/perfLogger";
 import PersistStatus from "@/utils/persistStatus";
-import { fetchRemotePluginConfig } from "@/services/remoteManagement";
+import { fetchRemoteAnnouncement, fetchRemotePluginConfig } from "@/services/remoteManagement";
 import Toast from "@/utils/toast";
 import * as SplashScreen from "expo-splash-screen";
 import {  Linking, Platform } from "react-native";
@@ -37,6 +37,25 @@ downloader.injectDependencies(Config, PluginManager);
 lyricManager.injectDependencies(TrackPlayer, Config, PluginManager);
 MusicSheet.injectDependencies(Config);
 
+
+async function showRemoteAnnouncementWhenReady() {
+    try {
+        const announcement = await fetchRemoteAnnouncement();
+        if (!announcement) return;
+
+        // 避免覆盖权限检查等启动弹窗，最多等待 30 秒。
+        const startedAt = Date.now();
+        while (getCurrentDialog()?.name && Date.now() - startedAt < 30000) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        if (!getCurrentDialog()?.name) {
+            showDialog("RemoteAnnouncementDialog", announcement);
+        }
+    } catch (error) {
+        errorLog("显示远程公告失败", error);
+    }
+}
 
 async function syncRemotePlugins() {
     try {
@@ -343,6 +362,8 @@ export default async function () {
         getDefaultStore().set(bootstrapAtom, {
             "state": "Done",
         });
+        // 公告在主界面初始化后显示，不阻塞 APP 启动。
+        void showRemoteAnnouncementWhenReady();
     } catch (e: any) {
         errorLog("初始化出错", e);
         if (getDefaultStore().get(bootstrapAtom).state === "Loading") {
