@@ -1,5 +1,8 @@
 name: Beta 构建
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [dev, feature/remote-server-management]
@@ -121,6 +124,14 @@ jobs:
           name: feature-apks-${{ needs.check-version.outputs.version }}
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
+
+      - name: Publish universal APK to test-latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test-latest
+          files: android/app/build/outputs/apk/release/app-universal-release.apk
+          overwrite_files: true
+          fail_on_unmatched_files: true
 
       - name: Build Summary
         run: |
