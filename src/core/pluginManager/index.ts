@@ -327,7 +327,7 @@ class PluginManager implements IPluginManager, IInjectable {
                     }
                 }
 
-                if (plugin.hash !== "") {
+                if (plugin.state === PluginState.Mounted && plugin.hash !== "") {
                     const fn = nanoid();
                     const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
                     await writeFile(_pluginPath, funcCode, "utf8");
