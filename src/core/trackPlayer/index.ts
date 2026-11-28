@@ -134,7 +134,7 @@ class TrackPlayer extends EventEmitter<{
         const quality =
             PersistStatus.get("music.quality") ||
             this.configService.getConfig("basic.defaultPlayQuality") ||
-            "standard";
+            "super";
 
         // 状态恢复
         if (rate) {
@@ -476,7 +476,7 @@ class TrackPlayer extends EventEmitter<{
             const plugin = this.pluginManagerService.getByName(musicItem.platform);
             // 5.2 获取音质排序
             const qualityOrder = getQualityOrder(
-                this.configService.getConfig("basic.defaultPlayQuality") ?? "standard",
+                this.configService.getConfig("basic.defaultPlayQuality") ?? "super",
                 this.configService.getConfig("basic.playQualityOrder") ?? "asc",
             );
             // 5.3 插件返回音源
