@@ -1,4 +1,3 @@
-import deviceInfoModule from "react-native-device-info";
 import AboutSetting from "./aboutSetting";
 import BackupSetting from "./backupSetting";
 import BasicSetting from "./basicSetting";
