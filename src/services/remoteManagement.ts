@@ -69,3 +69,62 @@ export async function fetchRemoteAnnouncement(): Promise<IRemoteAnnouncement | n
         return null;
     }
 }
+
+
+export interface IRemoteAboutConfig {
+    enabled: boolean;
+    header: {
+        avatar?: string;
+        name?: string;
+        contacts?: Array<{ label: string; value: string; url?: string }>;
+    };
+    body: Array<{
+        type: "heading" | "text" | "link" | "image" | "divider";
+        text?: string;
+        bold?: boolean;
+        label?: string;
+        url?: string;
+        caption?: string;
+    }>;
+}
+
+export async function fetchRemoteAboutConfig(): Promise<IRemoteAboutConfig | null> {
+    try {
+        const response = await axios.get(REMOTE_API.about, {
+            timeout: 8000,
+            headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+        });
+        const data = response.data;
+        if (!data || data.enabled !== true ||
+            !data.header || typeof data.header !== "object" ||
+            !Array.isArray(data.body)) {
+            return null;
+        }
+        const validUrl = (url: unknown) =>
+            typeof url === "string" && /^https?:\/\//i.test(url);
+        const contacts = Array.isArray(data.header.contacts)
+            ? data.header.contacts.filter((item: any) =>
+                item && typeof item.label === "string" &&
+                typeof item.value === "string" &&
+                (!item.url || validUrl(item.url)))
+            : [];
+        const body = data.body.filter((item: any) => {
+            if (!item || typeof item.type !== "string") return false;
+            if (item.type === "heading" || item.type === "text") return typeof item.text === "string";
+            if (item.type === "link") return typeof item.label === "string" && validUrl(item.url);
+            if (item.type === "image") return validUrl(item.url);
+            return item.type === "divider";
+        });
+        return {
+            enabled: true,
+            header: {
+                avatar: validUrl(data.header.avatar) ? data.header.avatar : undefined,
+                name: typeof data.header.name === "string" ? data.header.name : "",
+                contacts,
+            },
+            body,
+        };
+    } catch {
+        return null;
+    }
+}
