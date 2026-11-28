@@ -65,21 +65,36 @@ async function syncRemotePlugins() {
             return;
         }
 
-        let allInstalled = true;
+        let installedCount = 0;
+        const failures: string[] = [];
+        // 必须串行安装：每次安装都会基于当前插件列表更新 Jotai 状态，
+        // 并行安装会产生状态覆盖，导致最后只留下部分插件。
         for (const item of remoteConfig.plugins) {
             const result = await PluginManager.installPluginFromUrl(item.url);
-            if (!result.success) {
-                allInstalled = false;
-                errorLog("远程插件安装失败", { name: item.name, message: result.message });
+            if (result.success) {
+                installedCount += 1;
+            } else {
+                failures.push(`${item.name}: ${result.message || "安装失败"}`);
+                errorLog("远程插件安装失败", {
+                    name: item.name,
+                    message: result.message,
+                    url: item.url,
+                });
             }
         }
 
-        if (allInstalled) {
+        if (failures.length === 0) {
             PersistStatus.set("app.remotePluginConfigHash", fingerprint);
+            if (installedCount > 0) {
+                Toast.success(`服务器插件同步完成：${installedCount} 个`);
+            }
+        } else {
+            Toast.warn(`服务器插件同步：成功 ${installedCount} 个，失败 ${failures.length} 个。首个错误：${failures[0]}`);
         }
-    } catch (error) {
-        // 远程服务不可用不能影响 APP 启动和本地播放。
+    } catch (error: any) {
+        // 远程服务不可用不能影响 APP 启动和本地播放，但必须给用户可见反馈。
         errorLog("获取远程音乐插件配置失败", error);
+        Toast.warn(`读取服务器插件配置失败：${error?.message || "网络请求失败"}`);
     }
 }
 
