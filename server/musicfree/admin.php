@@ -212,7 +212,7 @@ $update = read_json_file($apiDir . '/version.json', ['published' => false, 'vers
 <?php if (!$loggedIn): ?>
 <section class="card"><h2>管理员登录</h2><form method="post"><input type="hidden" name="action" value="login"><div class="field"><label>后台密码</label><input type="password" name="password" required autofocus></div><button>登录</button></form><p class="hint">首次登录默认密码：admin123456。登录后请立即在基本设置中修改。</p></section>
 <?php else: ?>
-<section class="card"><h2>一、音乐插件配置</h2><p class="hint">直接编辑完整 JSON。保存时检查 JSON 格式和插件名称、网址；不会限制插件数量，也不会擅自改动其他字段。</p>
+<section class="card"><h2>一、音乐插件配置</h2><p class="hint">直接编辑后台配置文件（desc + plugins）。APP 启动时会自动读取并按配置加载插件。每项中的 url 是插件 JS 脚本文件地址，不是音乐 API 接口；普通用户无需填写或连接任何接口。保存时只校验 JSON 格式及插件名称、脚本地址，不限制插件数量，也不会擅自改动其他字段。</p>
 <form id="pluginsForm" method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_plugins"><div class="field"><textarea id="pluginsJson" name="plugins_json" rows="22" spellcheck="false"><?=h($pluginsRaw)?></textarea></div><button>校验并保存插件配置</button></form></section>
 
 <section class="card"><h2>二、公告管理</h2><form method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><input type="hidden" name="action" value="save_announcement">
