@@ -18,20 +18,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download verified build artifact
+      - name: Download verified customized build artifact
         uses: actions/download-artifact@v4
         with:
-          name: beta-apks-0.6.2
+          name: feature-apks-0.6.2
           path: artifact
           repository: ${{ github.repository }}
-          run-id: 46043833885
+          run-id: 46132128512
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish universal APK to stable test-latest URL
+      - name: Publish customized universal APK
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           APK="artifact/app-universal-release.apk"
           test -s "$APK"
-          gh release view test-latest >/dev/null 2>&1 || gh release create test-latest --title "MusicFree 0.6.2 通用版测试包" --notes "通用版 APK。来源：GitHub Actions run 46043833885。测试签名，仅供测试安装。"
+          gh release view test-latest >/dev/null 2>&1 || gh release create test-latest --title "MusicFree 定制版测试包" --notes "来自 feature/remote-server-management 分支构建。测试签名，仅供测试安装。"
+          gh release edit test-latest --title "MusicFree 定制版测试包" --notes "来自 feature/remote-server-management 分支构建。测试签名，仅供测试安装。"
           gh release upload test-latest "$APK" --clobber
