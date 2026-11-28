@@ -140,15 +140,6 @@ class AppConfig implements IAppConfig {
             await removeStorage("local-config"); // 根据需求决定是否删除旧配置
         }
 
-        if (schemaVersion < 3) {
-            // 定制版默认开启插件自动更新、跳过版本校验和懒加载。
-            // 对已安装的旧版本用户也应用一次，避免旧配置中的 false 覆盖新默认值。
-            this.setConfig("basic.autoUpdatePlugin", true);
-            this.setConfig("basic.notCheckPluginVersion", true);
-            this.setConfig("basic.lazyLoadPlugin", true);
-            configStore.set("$schema", "3");
-        }
-
         if (schemaVersion < 2) {
             // @ts-expect-error 兼容旧版本
             if (this.getConfig("basic.clickMusicInSearch") === "播放歌曲") {
@@ -174,6 +165,14 @@ class AppConfig implements IAppConfig {
             configStore.set("$schema", "2");
         }
 
+        if (schemaVersion < 3) {
+            // 定制版默认开启插件自动更新、跳过版本校验和懒加载。
+            // 对已安装的旧版本用户也应用一次，避免旧配置中的 false 覆盖新默认值。
+            this.setConfig("basic.autoUpdatePlugin", true);
+            this.setConfig("basic.notCheckPluginVersion", true);
+            this.setConfig("basic.lazyLoadPlugin", true);
+            configStore.set("$schema", "3");
+        }
 
     }
 
