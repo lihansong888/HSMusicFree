@@ -8,4 +8,5 @@ export const REMOTE_API = {
     plugins: `${REMOTE_SERVER_BASE_URL}/musicfree/api/plugins.json`,
     update: `${REMOTE_SERVER_BASE_URL}/musicfree/api/version.json`,
     announcement: `${REMOTE_SERVER_BASE_URL}/musicfree/api/announcement.json`,
+    about: `${REMOTE_SERVER_BASE_URL}/musicfree/api/about.json`,
 };
